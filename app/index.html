@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>项目中心 · AI电商视觉合规巡检系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: "class", theme: { extend: { colors: { bg: "var(--bg)", surface: "var(--surface)", "surface-2": "var(--surface-2)", border: "var(--border)", fg: "var(--text)", muted: "var(--text-muted)", subtle: "var(--text-subtle)", accent: "#4F46E5" }, fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["JetBrains Mono", "monospace"] } } } };
+</script>
+<style>
+  :root{--bg:#ffffff;--surface:#fafafa;--surface-2:#f4f4f5;--border:#e4e4e7;--text:#18181b;--text-muted:#71717a;--text-subtle:#a1a1aa;--accent:#4f46e5;--accent-hover:#4338ca;--accent-soft:rgba(79,70,229,.1);--danger:#dc2626;--warn:#f59e0b;--ok:#10b981;--shadow-sm:0 1px 2px rgba(24,24,27,.06);--shadow-md:0 4px 12px rgba(24,24,27,.08);--shadow-lg:0 16px 40px rgba(24,24,27,.14);--radius:8px;--radius-sm:6px;--radius-lg:10px;--font-sans:"Inter",system-ui,sans-serif;--font-mono:"JetBrains Mono",monospace}
+  .dark{--bg:#0a0a0b;--surface:#18181b;--surface-2:#27272a;--border:#27272a;--text:#fafafa;--text-muted:#a1a1aa;--text-subtle:#71717a;--accent-soft:rgba(99,102,241,.18);--shadow-sm:0 1px 2px rgba(0,0,0,.5);--shadow-md:0 4px 14px rgba(0,0,0,.55);--shadow-lg:0 18px 48px rgba(0,0,0,.65)}
+  *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:var(--font-sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow:hidden}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .app{display:flex;height:100vh}
+  .sidebar{width:240px;flex:0 0 240px;height:100vh;position:sticky;top:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;padding:18px 14px;z-index:60}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 16px}
+  .brand-mark{width:30px;height:30px;border-radius:8px;flex:0 0 auto;background:linear-gradient(135deg,#4f46e5,#7c73f0);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 10px rgba(79,70,229,.35)}
+  .brand-name{font-weight:600;font-size:15px}
+  .brand-sub{font-size:11px;color:var(--text-subtle);margin-top:1px}
+  .nav{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+  .nav-label{font-size:11px;font-weight:600;color:var(--text-subtle);text-transform:uppercase;letter-spacing:.06em;padding:12px 8px 6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--text-muted);font-size:13.5px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:.18s;user-select:none}
+  .nav-item svg{width:17px;height:17px;flex:0 0 auto}
+  .nav-item:hover{background:var(--surface-2);color:var(--text)}
+  .nav-item.active{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+  .nav-item .kbd{margin-left:auto;font-size:10.5px;color:var(--text-subtle);font-family:var(--font-mono);border:1px solid var(--border);padding:1px 5px;border-radius:5px}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:14px}
+  .theme-toggle{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:500;transition:.2s}
+  .theme-toggle:hover{color:var(--text);border-color:var(--accent)}
+  .theme-toggle svg{width:16px;height:16px}
+  .user-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg)}
+  .avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:600;flex:0 0 auto}
+  .main{flex:1;min-width:0;height:100vh;overflow-y:auto;position:relative}
+  .content{padding:26px 30px 60px;max-width:1240px;margin:0 auto}
+  .mobile-bar{display:none}.backdrop{display:none}
+  @media(max-width:767px){.sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:transform .28s;box-shadow:var(--shadow-lg)}.sidebar.open{transform:translateX(0)}.backdrop.show{display:block;position:fixed;inset:0;background:rgba(9,9,11,.45);z-index:55}.mobile-bar{display:flex;position:sticky;top:0;z-index:40;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px)}.content{padding:18px 16px 60px}}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .page-title{font-size:21px;font-weight:700;letter-spacing:-.02em}
+  .page-sub{font-size:13px;color:var(--text-muted);margin-top:4px}
+  .lift{transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s,border-color .3s}
+  .lift:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+  .panel-title{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  @media(max-width:1023px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 17px}
+  .stat-top{display:flex;align-items:center;justify-content:space-between}
+  .stat-ico{width:32px;height:32px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .stat-ico svg{width:17px;height:17px}
+  .stat-label{font-size:12.5px;color:var(--text-muted);font-weight:500}
+  .stat-val{font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:10px;line-height:1}
+  /* table */
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface-2)}
+  tr:last-child td{border-bottom:none}
+  td .sub{color:var(--text-subtle);font-size:11.5px}
+  .row-actions{display:flex;gap:6px}
+  .icon-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text-muted);font-size:12px;transition:.15s}
+  .icon-btn:hover{background:var(--surface-2);color:var(--text)}
+  .icon-btn.danger:hover{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--border))}
+  .thumb-img{width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
+  /* pill */
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px}
+  .pill-high{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+  .pill-low{background:var(--surface-2);color:var(--text-muted)}
+  .pill-ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:#047857}
+  .pill-warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:#b45309}
+  .pill-flag{background:var(--accent-soft);color:var(--accent)}
+  .pill-agent{background:var(--surface-2);color:var(--text-muted)}
+  .pill-pending{background:color-mix(in srgb,var(--warn) 14%,transparent);color:#b45309}
+  .pill-notified{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+  .pill-modified{background:color-mix(in srgb,var(--ok) 14%,transparent);color:#047857}
+  /* buttons / forms */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:.2s}
+  .btn:hover{background:var(--surface-2)}
+  .btn svg{width:15px;height:15px}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn-primary:hover{background:var(--accent-hover)}
+  .btn-danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--border))}
+  .btn-danger:hover{background:color-mix(in srgb,var(--danger) 10%,transparent)}
+  .btn-sm{padding:5px 9px;font-size:12px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12.5px;font-weight:500;color:var(--text-muted);margin-bottom:6px}
+  .input,.select,.textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;color:var(--text);font-size:13px;font-family:var(--font-sans);transition:.2s}
+  .input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .textarea{resize:vertical;min-height:80px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .form-grid .full{grid-column:1/-1}
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+  .seg button{border:none;background:var(--surface);color:var(--text-muted);padding:6px 12px;font-size:12.5px;cursor:pointer;font-weight:500}
+  .seg button.active{background:var(--accent-soft);color:var(--accent)}
+  .empty{text-align:center;color:var(--text-subtle);padding:40px;font-size:13px}
+  /* compare modal */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:767px){.compare-grid{grid-template-columns:1fr}}
+  .compare-cell{position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#000}
+  .compare-cell img{display:block;width:100%;height:auto}
+  .compare-cell .cap{position:absolute;top:8px;left:8px;background:rgba(9,9,11,.7);color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;font-weight:600}
+  .annot{position:absolute;border:2px solid #ef4444;box-shadow:0 0 0 9999px rgba(239,68,68,.06);cursor:move}
+  .annot::after{content:"";position:absolute;inset:-6px}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(9,9,11,.45);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s;padding:16px}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .modal{width:min(640px,95vw);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:22px;transform:translateY(10px) scale(.98);transition:transform .28s cubic-bezier(.34,1.56,.64,1);max-height:92vh;overflow-y:auto}
+  .overlay.show .modal{transform:translateY(0) scale(1)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .modal-title{font-size:16px;font-weight:600}
+  .modal-x{background:none;border:none;color:var(--text-subtle);cursor:pointer;padding:4px;border-radius:6px}
+  .modal-x:hover{background:var(--surface-2);color:var(--text)}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+  .check{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+  /* toast */
+  .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:120;display:flex;flex-direction:column;gap:10px}
+  .toast{display:flex;align-items:center;gap:10px;min-width:240px;max-width:360px;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);box-shadow:var(--shadow-lg);font-size:13px;animation:toastIn .3s cubic-bezier(.34,1.56,.64,1)}
+  .toast svg{width:16px;height:16px;flex:0 0 auto}
+  .toast.success{border-left-color:var(--ok)}.toast.warn{border-left-color:var(--warn)}.toast.error{border-left-color:var(--danger)}
+  .toast.leaving{animation:toastOut .25s ease forwards}
+  @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes toastOut{to{opacity:0;transform:translateX(24px)}}
+  .timeline{position:relative;padding-left:22px}
+  .timeline::before{content:"";position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--border)}
+  .tl-item{position:relative;padding:0 0 16px}
+  .tl-item::before{content:"";position:absolute;left:-19px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tl-time{font-size:11px;color:var(--text-subtle);font-family:var(--font-mono)}
+  .tl-text{font-size:13px;margin-top:3px;line-height:1.5}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}::-webkit-scrollbar-track{background:transparent}
+  .hint{font-size:11.5px;color:var(--text-subtle);margin-top:6px;line-height:1.5}
+  .target-head{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+  .target-head .count{font-family:var(--font-mono);background:var(--surface-2);color:var(--text);border-radius:20px;padding:0 8px;font-size:11px}
+  .target-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+  .target-card{border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;background:var(--surface-2);display:flex;flex-direction:column;gap:7px;transition:.2s}
+  .target-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm)}
+  .tc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .tc-label{font-weight:600;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tc-pair{display:flex;flex-direction:column;gap:3px}
+  .tc-row{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--font-mono);color:var(--text-muted)}
+  .tc-tag{flex:0 0 auto;font-size:10px;font-weight:600;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent)}
+  .tc-tag.a{background:var(--surface);color:var(--text-subtle)}
+  .tc-url{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
+  .tc-foot{display:flex;gap:6px;margin-top:3px}
+  .tc-foot .btn{flex:1;justify-content:center;padding:7px 10px;font-size:12.5px}
+  .tc-del{flex:0 0 auto;color:var(--danger)}
+  .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .member-card{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);transition:.18s}
+  .member-card:hover{border-color:color-mix(in srgb,var(--accent) 40%,transparent);box-shadow:var(--shadow-sm)}
+  .mc-info{flex:1;min-width:0}
+  .mc-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .mc-dept{font-size:12.5px;color:var(--text-muted);margin-top:2px}
+  .mc-time{font-size:11px;color:var(--text-subtle);margin-top:3px;font-family:var(--font-mono)}
+  .pill-ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:#047857;font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600}
+  .tc-empty{font-size:12px;color:var(--text-subtle);padding:4px 0}
+  /* 实时协作 */
+  .presence{margin-bottom:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+  .pres-count{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text)}
+  .pres-dot-live{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+  .pres-avs{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+  .live-tag{margin-left:8px;font-size:10px;font-weight:700;color:#fff;background:var(--ok);padding:1px 7px;border-radius:99px;letter-spacing:.04em}
+  .mc-online{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:middle;box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 25%,transparent)}
+  /* ---- 精准巡检：分组 + 组对比 ---- */
+  .group{margin-bottom:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg-elev)}
+  .group-head{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;background:var(--bg-elev);font-size:14px}
+  .group-head .chev{transition:transform .15s;color:var(--text-subtle)}
+  .group-count{margin-left:8px;font-size:12px;color:var(--text-subtle)}
+  .group-body{padding:6px 10px 10px}
+  .insp-card{border:1px solid var(--border);border-radius:10px;margin:8px 0;background:var(--bg)}
+  .insp-row{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+  .insp-row .chev2{transition:transform .15s;color:var(--text-subtle)}
+  .insp-meta{flex:1;min-width:0}
+  .insp-url{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .insp-meta .muted{color:var(--text-subtle)}
+  .pill-sub{background:var(--bg-elev);color:var(--text-muted);border:1px solid var(--border)}
+  .insp-detail{padding:6px 12px 12px;border-top:1px dashed var(--border)}
+  .compare-view{margin-top:4px}
+  .cmp-block{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px}
+  .cmp-cap{font-weight:600;font-size:13px;margin-bottom:10px;color:var(--text)}
+  .cmp-row{display:flex;gap:14px}
+  .cmp-side{flex:1;min-width:0}
+  .cmp-side .cap{font-size:11px;color:var(--text-subtle);margin-bottom:6px;display:block}
+  .cmp-side img{width:100%;border-radius:8px;border:1px solid var(--border);display:block;background:#fff}
+  .cmp-wrap{position:relative;display:inline-block;width:100%}
+  .red-box{position:absolute;border:3px solid #dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.25);pointer-events:none;border-radius:3px;z-index:2}
+  .miss{display:flex;align-items:center;justify-content:center;min-height:120px;border:1px dashed #dc2626;border-radius:8px;color:#dc2626;font-size:13px;background:rgba(220,38,38,.05)}
+  .miss.sm{min-height:60px;font-size:11px;padding:4px}
+  .sku-list{display:flex;flex-wrap:wrap;gap:8px}
+  .sku-cell{position:relative;width:84px}
+  .sku-cell img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#fff}
+  .sku-cell.bad img{border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.2)}
+  .miss-badge{position:absolute;top:-7px;right:-6px;background:#dc2626;color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700}
+  .cmp-note{font-size:12px;color:var(--text-muted);margin-top:8px}
+  .insp-alert{font-size:12.5px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin:0 14px 10px}
+  .login-status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 10px;border-radius:999px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+  .dark .login-status{background:#1e293b;color:#94a3b8;border-color:#334155}
+  .login-status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.85}
+  .login-status.ok{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+  .dark .login-status.ok{background:#052e22;color:#6ee7b7;border-color:#065f46}
+  .login-status.pending{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+  .dark .login-status.pending{background:#0f2147;color:#93c5fd;border-color:#1e3a8a}
+  .login-status.err{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+  .dark .login-status.err{background:#2a1416;color:#fca5a5;border-color:#7f1d1d}
+  .insp-alert.err{color:#b45309;background:#fffbeb;border-color:#fde68a}
+  .dark .insp-alert.err{color:#fcd34d;background:#2a2113;border-color:#92400e}
+  .pill-sub.st-running{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
+  .pill-sub.st-queued{color:#6b7280;background:#f3f4f6}
+  .pill-sub.st-done{color:#047857;background:#ecfdf5;border-color:#a7f3d0}
+  .pill-sub.st-error{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
+  .dark .pill-sub.st-running{color:#93c5fd;background:#15233f;border-color:#1e3a8a}
+  .dark .pill-sub.st-queued{color:#9ca3af;background:#1f2937}
+  .dark .pill-sub.st-done{color:#6ee7b7;background:#0c2a20;border-color:#065f46}
+  .dark .pill-sub.st-error{color:#fca5a5;background:#2a1416;border-color:#7f1d1d}
+  .spin{display:inline-block;width:10px;height:10px;margin-right:5px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:-1px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .dark .insp-alert{color:#fca5a5;background:#2a1416;border-color:#7f1d1d}
+  .cmp-foot{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 3h7v7H3zM14 3h7v4h-7zM14 11h7v10h-7zM3 13h7v4H3z"/></svg></div>
+      <div><div class="brand-name">项目中心</div><div class="brand-sub">AI 视觉合规巡检</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">工作区</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>仪表盘<span class="kbd">⌘1</span></div>
+      <div class="nav-item" data-page="shops" onclick="navigate('shops')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 13h6"/></svg>店铺管理<span class="kbd">⌘2</span></div>
+      <div class="nav-item" data-page="sku" onclick="navigate('sku')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4"/></svg>SKU映射<span class="kbd">⌘3</span></div>
+      <div class="nav-item" data-page="standards" onclick="navigate('standards')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>视觉标准库<span class="kbd">⌘4</span></div>
+      <div class="nav-item" data-page="issues" onclick="navigate('issues')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>违规看板<span class="kbd">⌘5</span></div>
+      <div class="nav-item" data-page="settings" onclick="navigate('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>项目设置<span class="kbd">⌘6</span></div>
+      <div class="nav-item" data-page="members" onclick="navigate('members')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>成员<span class="kbd">⌘7</span></div>
+    </nav>
+    <div class="side-foot">
+      <div id="presence" class="presence"></div>
+      <div class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon"></span><span id="theme-text">深色模式</span></div>
+      <div class="user-card" id="user-card"><span class="avatar" style="width:34px;height:34px;background:#4F46E5;font-size:14px">设</span><div><div style="font-size:13px;font-weight:600">设计负责人</div><div style="font-size:11px;color:var(--text-subtle)">项目 Owner</div></div></div>
+    </div>
+  </aside>
+  <div class="backdrop" id="backdrop" onclick="closeSidebar()"></div>
+
+  <div class="main">
+    <div class="mobile-bar">
+      <button class="btn" onclick="openSidebar()" style="padding:6px 9px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="brand-name">项目中心</div>
+    </div>
+    <div class="content">
+      <section id="page-dashboard"></section>
+      <section id="page-shops" hidden></section>
+      <section id="page-sku" hidden></section>
+      <section id="page-standards" hidden></section>
+      <section id="page-issues" hidden></section>
+      <section id="page-settings" hidden></section>
+      <section id="page-members" hidden></section>
+    </div>
+  </div>
+</div>
+
+<!-- generic modal -->
+<div class="overlay" id="modal"><div class="modal"><div class="modal-head"><div class="modal-title" id="modal-title"></div><button class="modal-x" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div id="modal-body"></div></div></div>
+<!-- compare modal -->
+<div class="overlay" id="modal-compare"><div class="modal" style="width:min(880px,96vw)"><div class="modal-head"><div class="modal-title" id="compare-title">双屏比对</div><button class="modal-x" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div id="compare-body"></div></div></div>
+<!-- batch modal -->
+<div class="overlay" id="modal-batch"><div class="modal"><div class="modal-head"><div class="modal-title">批量整改通知（已生成）</div><button class="modal-x" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div id="batch-body"></div></div></div>
+
+<!-- 入场身份登记 -->
+<div class="overlay" id="gate"><div class="modal" style="width:min(420px,94vw)"><div class="modal-head"><div class="modal-title">欢迎使用 · 请先登记身份</div></div><div class="modal-body" style="padding:0"><p class="hint" style="margin:0 0 16px">进入系统前，请填写您的<b>真实姓名</b>与<b>所在部门</b>，便于追踪每一次巡检操作的归属。</p><div class="field"><label>真实姓名</label><input class="input" id="gate-name" placeholder="如：张三" maxlength="20"></div><div class="field"><label>所在部门</label><input class="input" id="gate-dept" placeholder="如：视觉设计部" maxlength="30"></div><button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitGate()">进入系统</button></div></div></div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* 全局注入当前用户身份：所有请求（含文件上传）都携带 X-User-Id，供后端记录操作归属与协作实时推送 */
+(function(){
+  const _orig = window.fetch.bind(window);
+  window.fetch = function(url, opts){
+    opts = opts || {};
+    try{
+      const m = JSON.parse(localStorage.getItem("currentMember")||"null");
+      if(m && m.id){ opts.headers = Object.assign({}, opts.headers||{}, {"X-User-Id": String(m.id)}); }
+    }catch(e){}
+    return _orig(url, opts);
+  };
+})();
+
+const API = (p, o={}) => fetch("/api"+p, Object.assign({headers:{"Content-Type":"application/json"}}, o)).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); });
+const SUN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+const MOON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const I_OK='<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const I_W='<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>';
+const I_E='<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+const I_I='<svg viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>';
+function toast(msg, t="info"){const w=document.getElementById("toast-wrap");const e=document.createElement("div");e.className="toast "+t;const ic=t==="success"?I_OK:t==="warn"?I_W:t==="error"?I_E:I_I;e.innerHTML=ic+"<span></span>";e.querySelector("span").textContent=msg;w.appendChild(e);setTimeout(()=>{e.classList.add("leaving");setTimeout(()=>e.remove(),260);},2600);}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+
+/* ---------- 实时协作：SSE 监听 + 在线状态 + 协作动态 ---------- */
+const Collab = {
+  es:null, _online:[],
+  me(){ try{ return JSON.parse(localStorage.getItem("currentMember")||"null"); }catch(e){ return null; } },
+  curPage(){ for(const p of PAGES){ const el=document.getElementById("page-"+p); if(el && !el.hidden) return p; } return "dashboard"; },
+  actionLabel(a){ return {create:"新增了",update:"更新了",delete:"删除了",join:"加入了团队",leave:"离开了团队",notify:"发送了整改通知",inspect:"发起了巡检",refresh:"刷新了"}[a]||a; },
+  start(){
+    if(this.es) return;
+    try{ this.es = new EventSource("/api/events"); }catch(e){ return; }
+    this.es.onmessage = (ev)=>{ try{ this.onEvent(JSON.parse(ev.data)); }catch(e){} };
+    this.es.addEventListener("presence", (ev)=>{ try{ this.onPresence(JSON.parse(ev.data).online||[]); }catch(e){} });
+  },
+  onEvent(d){
+    const me=this.me();
+    if(d.actor_id && me && d.actor_id===me.id) return;   // 自己的操作不再重复提示
+    if(d.actor_name) toast("👤 "+d.actor_name+" "+this.actionLabel(d.action)+(d.detail?("："+d.detail):""), "info");
+    this.refresh(d.resource);
+    this.refreshActivity();
+  },
+  refresh(resource){
+    const p=this.curPage();
+    const R={dashboard:renderDashboard,shops:renderShops,sku:renderSku,standards:renderStandards,issues:renderIssues,settings:renderSettings,members:renderMembers};
+    if(resource==="shops"||resource==="tasks"){ if(p==="dashboard")renderDashboard(); else if(p==="shops")renderShops(); }
+    else if(resource==="inspections"){ if(p==="dashboard")renderDashboard(); else if(p==="issues")renderIssues(); }
+    else if(R[resource]&&p===resource) R[resource]();
+  },
+  onPresence(online){
+    const wrap=document.getElementById("presence"); if(!wrap) return;
+    this._online = online.map(m=>m.id);
+    const me=this.me();
+    const avs=online.slice(0,6).map(m=>`<span class="avatar" title="${esc(m.name)} · ${esc(m.department||"")}" style="width:26px;height:26px;font-size:11px;background:#4F46E5">${esc((m.name||"?").slice(0,1))}</span>`).join("");
+    wrap.innerHTML=`<div class="pres-count"><span class="pres-dot-live"></span>${online.length} 人在线</div><div class="pres-avs">${avs||'<span class="hint">暂无其他在线成员</span>'}</div>`;
+    if(this.curPage()==="members") this.markMembersOnline();
+  },
+  markMembersOnline(){
+    document.querySelectorAll(".member-card").forEach(card=>{
+      const id=+card.dataset.id; const dot=card.querySelector(".mc-online");
+      if(this._online.indexOf(id)>=0){ if(!dot){ const d=document.createElement("span"); d.className="mc-online"; d.title="在线"; card.querySelector(".mc-name").appendChild(d); } }
+      else if(dot){ dot.remove(); }
+    });
+  },
+  async refreshActivity(){
+    const feed=document.getElementById("activity-feed"); if(!feed) return;
+    let list=[]; try{ list=await API("/activity"); }catch(e){}
+    if(!list.length){ feed.innerHTML='<div class="tl-item"><div class="tl-text">暂无协作记录，开始编辑后这里会实时显示团队动态。</div></div>'; return; }
+    feed.innerHTML=list.map(a=>`<div class="tl-item"><div class="tl-time">${esc(a.created_at||"")}</div><div class="tl-text"><b>${esc(a.member_name||"系统")}</b> ${esc(a.detail||"")}</div></div>`).join("");
+  }
+};
+function startCollab(){ Collab.start(); setInterval(()=>{ try{ fetch("/api/heartbeat",{method:"POST"}); }catch(e){} }, 15000); }
+
+/* theme */
+function toggleTheme(){const h=document.documentElement;h.classList.toggle("dark");const d=h.classList.contains("dark");localStorage.setItem("theme",d?"dark":"light");updTheme(d);toast(d?"已切换深色模式":"已切换浅色模式","info");}
+function updTheme(d){document.getElementById("theme-icon").innerHTML=d?SUN:MOON;document.getElementById("theme-text").textContent=d?"浅色模式":"深色模式";}
+(function(){let p=null;try{p=localStorage.getItem("theme");}catch(e){}if(!p)p=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";const d=p==="dark";document.documentElement.classList.toggle("dark",d);updTheme(d);})();
+
+/* nav */
+const PAGES=["dashboard","shops","sku","standards","issues","settings","members"];
+const TITLES={dashboard:"仪表盘",shops:"店铺管理",sku:"SKU映射",standards:"视觉标准库",issues:"违规看板",settings:"项目设置",members:"成员"};
+function navigate(p){PAGES.forEach(id=>document.getElementById("page-"+id).hidden=id!==p);document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.dataset.page===p));closeSidebar();renderPage(p);}
+function openSidebar(){document.getElementById("sidebar").classList.add("open");document.getElementById("backdrop").classList.add("show");}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("backdrop").classList.remove("show");}
+document.addEventListener("keydown",e=>{const m=e.metaKey||e.ctrlKey;if(m&&["1","2","3","4","5","6","7"].includes(e.key)){e.preventDefault();navigate(PAGES[+e.key-1]);}else if(e.key==="Escape"){closeModal();}});
+
+/* modal */
+function openModal(title, body, foot){document.getElementById("modal-title").textContent=title;document.getElementById("modal-body").innerHTML=body+(foot?`<div class="modal-foot">${foot}</div>`:"");document.getElementById("modal").classList.add("show");}
+function closeModal(){document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("show"));}
+
+/* ---------- renderers ---------- */
+async function renderPage(p){
+  if(p==="dashboard")return renderDashboard();
+  if(p==="shops")return renderShops();
+  if(p==="sku")return renderSku();
+  if(p==="standards")return renderStandards();
+  if(p==="issues"){ refreshTbLoginStatus(); return renderIssues(); }
+  if(p==="settings")return renderSettings();
+  if(p==="members")return renderMembers();
+}
+
+async function renderDashboard(){
+  const [shops,issues]=await Promise.all([API("/shops"),API("/inspections")]);
+  const pending=issues.filter(i=>i.status==="pending").length;
+  const modified=issues.filter(i=>i.status==="modified").length;
+  const done=issues.filter(i=>i.state==="done");
+  let avg=0;
+  if(done.length){
+    let s=0,n=0;
+    done.forEach(i=>{ if(i.cmp_main&&!i.cmp_main.skipped&&i.cmp_main.score!=null){ s+=i.cmp_main.score; n++; } });
+    avg=n?Math.round(s/n*10)/10:0;
+  }
+  const recent=done.slice(0,5).map(i=>`<div class="tl-item"><div class="tl-time">#${i.id} · ${i.state}</div><div class="tl-text">${esc(hostOf(i.agent_url)||"某店铺")}：${(i.status==="pending"?"发现差异":"视觉一致")}${i.error?(" · "+esc(i.error)):""}</div></div>`).join("")||'<div class="tl-item"><div class="tl-text">暂无巡检记录，去「违规看板」粘贴一对链接开始单链接巡检。</div></div>';
+  document.getElementById("page-dashboard").innerHTML=`
+    <div class="page-head"><div><div class="page-title">仪表盘</div><div class="page-sub">AI电商视觉合规巡检系统 · 数据实时来自后端数据库</div></div>
+      <button class="btn btn-primary" onclick="navigate('issues')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>去巡检</button></div>
+    <div class="stat-grid" style="margin-bottom:16px">
+      ${statCard("店铺总数",shops.length,"#4F46E5","M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 13h6")}
+      ${statCard("待处理违规",pending,"#dc2626","M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z")}
+      ${statCard("平均视觉合规率",avg+"%","#10b981","M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z")}
+      ${statCard("已修改",modified,"#4f46e5","M20 6 9 17l-5-5")}
+    </div>
+    <div class="panel"><div class="panel-title">团队协作动态 <span class="live-tag">实时</span></div><div class="timeline" id="activity-feed"></div></div>
+    <div class="panel"><div class="panel-title">最近巡检任务</div><div class="timeline">${recent}</div></div>`;
+  Collab.refreshActivity();
+}
+function statCard(label,val,color,path){return `<div class="stat-card lift"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico" style="color:${color};background:color-mix(in srgb,${color} 12%,transparent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg></span></div><div class="stat-val num">${val}</div></div>`;}
+
+async function renderShops(){
+  const list=(await API("/shops")).filter(s=>s.role!=="flag");
+  const rows=list.map(s=>`<tr>
+    <td><img class="thumb-img" src="/uploads/${esc(s.image||"")}" onerror="this.style.display='none'"> ${esc(s.name)}</td>
+    <td>${esc(s.owner||"—")}</td><td class="num">${esc(s.email||"—")}</td><td class="num" style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc(s.url||"—")}</td>
+    <td>${esc(s.grp||"—")}</td>
+    <td><span class="pill ${s.role==="flag"?"pill-flag":"pill-agent"}">${s.role==="flag"?"官旗":"代理商"}</span></td>
+    <td class="num">${s.price!=null?"¥"+s.price:"—"}</td>
+    <td><div class="row-actions"><button class="icon-btn" onclick="uploadShopImg(${s.id})">传图</button><button class="icon-btn" onclick="editShop(${s.id})">编辑</button><button class="icon-btn danger" onclick="delShop(${s.id})">删</button></div></td></tr>`).join("");
+  document.getElementById("page-shops").innerHTML=`
+    <div class="page-head"><div><div class="page-title">店铺管理（代理商店铺）</div><div class="page-sub">在此上传代理商店铺链接，巡查时系统自动抓取其与「视觉标准库」官旗基准做视觉 / 价格比对。可新增 / 编辑 / 删除。</div></div>
+      <button class="btn btn-primary" onclick="editShop()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增代理商店铺</button></div>
+    <div class="table-wrap"><table><thead><tr><th>店铺 / 图</th><th>负责人</th><th>邮箱</th><th>URL</th><th>分组</th><th>角色</th><th>价格</th><th>操作</th></tr></thead><tbody>${rows||''}</tbody></table>${list.length?'':'<div class="empty">暂无店铺，点击右上角新增。</div>'}</div>`;
+}
+function shopForm(s){s=s||{};return `<form id="f-shop" class="form-grid">
+  <div class="field full"><label>店铺名称</label><input class="input" name="name" value="${esc(s.name||"")}" required></div>
+  <div class="field"><label>负责人</label><input class="input" name="owner" value="${esc(s.owner||"")}"></div>
+  <div class="field"><label>联系邮箱</label><input class="input num" name="email" value="${esc(s.email||"")}"></div>
+  <div class="field full"><label>店铺 URL</label><input class="input num" name="url" value="${esc(s.url||"")}"></div>
+  <div class="field"><label>所属分组</label><input class="input" name="grp" value="${esc(s.grp||"")}"></div>
+  <div class="field"><label>角色</label><select class="select" name="role"><option value="agent" ${s.role!=="flag"?"selected":""}>代理商</option><option value="flag" ${s.role==="flag"?"selected":""}>官方旗舰店（基准）</option></select></div>
+  <div class="field"><label>参考价格 ¥</label><input class="input num" name="price" type="number" step="0.01" value="${s.price!=null?s.price:""}"></div>
+</form>`;}
+async function editShop(id){let s=null;if(id){const list=await API("/shops");s=list.find(x=>x.id===id);}openModal(id?"编辑店铺":"新增店铺",shopForm(s),`<button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveShop(${id||0})">保存</button>`);}
+async function saveShop(id){const f=document.getElementById("f-shop");const b=Object.fromEntries(new FormData(f).entries());if(!b.name){toast("请填写店铺名称","warn");return;}if(id){await API("/shops/"+id,{"method":"PUT",body:JSON.stringify(b)});toast("已保存","success");}else{await API("/shops",{method:"POST",body:JSON.stringify(b)});toast("已创建","success");}closeModal();renderShops();}
+async function delShop(id){if(!confirm("确认删除该店铺？"))return;await API("/shops/"+id,{method:"DELETE"});toast("已删除","success");renderShops();}
+function uploadShopImg(id){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const fd=new FormData();fd.append("file",f);await fetch("/api/shops/"+id+"/image",{method:"POST",body:fd});toast("图片已上传并存盘","success");renderShops();};inp.click();}
+function addFlagShop(){openModal("添加官旗链接",shopForm({role:"flag"}),`<button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveShop(0)">保存</button>`);}
+async function loadFlagShops(){
+  const el=document.getElementById("flag-list");if(!el)return;
+  let flags=[];try{flags=(await API("/shops")).filter(s=>s.role==="flag");}catch(e){}
+  if(!flags.length){el.innerHTML='<div class="tc-empty">暂无官旗链接。点击「添加官旗链接」录入官方旗舰店 URL。</div>';return;}
+  el.innerHTML=flags.map(s=>`<div class="target-card">
+    <div class="tc-top"><div class="tc-label">${esc(s.name)}</div><span class="pill pill-flag">官旗</span></div>
+    <div class="tc-row"><span class="tc-tag">链接</span><span class="tc-url">${esc(s.url||"未填链接")}</span></div>
+    <div class="tc-row"><span class="tc-tag a">价</span><span class="tc-url">${s.price!=null?"¥"+s.price:"待抓取"}</span></div>
+    <div class="tc-foot"><button class="btn" onclick="editShop(${s.id})">编辑</button><button class="btn tc-del" onclick="delShop(${s.id})">删除</button></div>
+  </div>`).join("");
+}
+
+async function renderSku(){
+  const list=await API("/sku");
+  const rows=list.map(k=>`<tr><td>${esc(k.official_sku||"—")}</td><td class="num" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc(k.official_url||"—")}</td><td>${esc(k.agent_shop||"—")}</td><td>${esc(k.agent_sku||"—")}</td><td class="num" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${esc(k.agent_url||"—")}</td><td class="num">${k.official_price!=null?"¥"+k.official_price:"—"} / ${k.agent_price!=null?"¥"+k.agent_price:"—"}</td><td><div class="row-actions"><button class="icon-btn" onclick="editSku(${k.id})">编辑</button><button class="icon-btn danger" onclick="delSku(${k.id})">删</button></div></td></tr>`).join("");
+  document.getElementById("page-sku").innerHTML=`<div class="page-head"><div><div class="page-title">SKU 映射绑定</div><div class="page-sub">将「官旗商品」与「代理商同款商品」一对一 / 一对多绑定，确保比对的是同一款商品</div></div>
+    <button class="btn btn-primary" onclick="editSku()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增映射</button></div>
+    <div class="table-wrap"><table><thead><tr><th>官旗SKU</th><th>官旗URL</th><th>代理商店铺</th><th>代理SKU</th><th>代理URL</th><th>官旗/代理价</th><th>操作</th></tr></thead><tbody>${rows||''}</tbody></table>${list.length?'':'<div class="empty">暂无映射。</div>'}</div>`;
+}
+function skuForm(k){k=k||{};return `<form id="f-sku" class="form-grid">
+  <div class="field"><label>官旗SKU</label><input class="input" name="official_sku" value="${esc(k.official_sku||"")}"></div>
+  <div class="field"><label>代理商店铺</label><input class="input" name="agent_shop" value="${esc(k.agent_shop||"")}"></div>
+  <div class="field full"><label>官旗商品URL</label><input class="input num" name="official_url" value="${esc(k.official_url||"")}"></div>
+  <div class="field"><label>代理SKU</label><input class="input" name="agent_sku" value="${esc(k.agent_sku||"")}"></div>
+  <div class="field"><label>代理商品URL</label><input class="input num" name="agent_url" value="${esc(k.agent_url||"")}"></div>
+  <div class="field"><label>官旗价 ¥</label><input class="input num" name="official_price" type="number" step="0.01" value="${k.official_price!=null?k.official_price:""}"></div>
+  <div class="field"><label>代理价 ¥</label><input class="input num" name="agent_price" type="number" step="0.01" value="${k.agent_price!=null?k.agent_price:""}"></div>
+</form>`;}
+async function editSku(id){let k=null;if(id){const list=await API("/sku");k=list.find(x=>x.id===id);}openModal(id?"编辑映射":"新增映射",skuForm(k),`<button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSku(${id||0})">保存</button>`);}
+async function saveSku(id){const f=document.getElementById("f-sku");const b=Object.fromEntries(new FormData(f).entries());if(id){await API("/sku/"+id,{"method":"PUT",body:JSON.stringify(b)});}else{await API("/sku",{method:"POST",body:JSON.stringify(b)});}toast("已保存","success");closeModal();renderSku();}
+async function delSku(id){if(!confirm("确认删除？"))return;await API("/sku/"+id,{method:"DELETE"});toast("已删除","success");renderSku();}
+
+async function renderStandards(){
+  const list=await API("/standards");
+  const cards=list.map(st=>`<div class="panel lift" style="padding:16px">
+    <div style="display:flex;gap:14px">
+      <img class="thumb-img" style="width:90px;height:90px" src="/uploads/${esc(st.image||"")}" onerror="this.style.display='none'">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${esc(st.name)}</div>
+        <div class="hint">页面类型：${esc(st.page_type||"—")} · 标准色 <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${esc(st.hex_color||"#ccc")};vertical-align:middle"></span> ${esc(st.hex_color||"—")}</div>
+        <div class="hint">Logo坐标：X${st.logo_x??"—"}% Y${st.logo_y??"—"}% W${st.logo_w??"—"}% H${st.logo_h??"—"}%</div>
+        <div class="hint">禁用字体：${esc(st.forbidden_fonts||"无")}</div>
+      </div>
+    </div>
+    <div class="row-actions" style="margin-top:12px"><button class="icon-btn" onclick="uploadStdImg(${st.id})">传基准图</button><button class="icon-btn" onclick="editStd(${st.id})">编辑</button><button class="icon-btn danger" onclick="delStd(${st.id})">删</button></div>
+  </div>`).join("");
+  document.getElementById("page-standards").innerHTML=`<div class="page-head"><div><div class="page-title">视觉标准库（黄金模板）</div><div class="page-sub">手动上传官旗标准图作为基准锚点，自定义色值 / Logo 比例坐标 / 禁用字体，所有字段可增删改</div></div>
+    <button class="btn btn-primary" onclick="editStd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新增标准</button></div>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title">官旗基准链接（视觉 / 价格基准来源）</div>
+      <div class="hint">在此上传官方旗舰店链接，作为所有代理商比对的「黄金基准」。点击「开始巡查」时系统自动抓取官旗页面作为基准图与基准价。</div>
+      <div class="target-list" id="flag-list" style="margin-top:10px"></div>
+      <button class="btn btn-primary" style="margin-top:10px" onclick="addFlagShop()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>添加官旗链接</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">${cards||'<div class="empty">暂无标准，点击右上角新增。</div>'}</div>`;
+  loadFlagShops();
+}
+function stdForm(st){st=st||{};return `<form id="f-std" class="form-grid">
+  <div class="field full"><label>标准图命名</label><input class="input" name="name" value="${esc(st.name||"")}" required></div>
+  <div class="field"><label>适用页面类型</label><select class="select" name="page_type"><option ${st.page_type==="主图"?"selected":""}>主图</option><option ${st.page_type==="详情页"?"selected":""}>详情页</option><option ${st.page_type==="推广图"?"selected":""}>推广图</option></select></div>
+  <div class="field"><label>标准色值 Hex</label><input class="input num" name="hex_color" value="${esc(st.hex_color||"")}" placeholder="#4F46E5"></div>
+  <div class="field"><label>Logo X %</label><input class="input num" name="logo_x" type="number" step="0.1" value="${st.logo_x??""}"></div>
+  <div class="field"><label>Logo Y %</label><input class="input num" name="logo_y" type="number" step="0.1" value="${st.logo_y??""}"></div>
+  <div class="field"><label>Logo 宽 %</label><input class="input num" name="logo_w" type="number" step="0.1" value="${st.logo_w??""}"></div>
+  <div class="field"><label>Logo 高 %</label><input class="input num" name="logo_h" type="number" step="0.1" value="${st.logo_h??""}"></div>
+  <div class="field full"><label>禁用字体黑名单（逗号分隔）</label><input class="input" name="forbidden_fonts" value="${esc(st.forbidden_fonts||"")}"></div>
+</form>`;}
+async function editStd(id){let st=null;if(id){const list=await API("/standards");st=list.find(x=>x.id===id);}openModal(id?"编辑标准":"新增标准",stdForm(st),`<button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveStd(${id||0})">保存</button>`);}
+async function saveStd(id){const f=document.getElementById("f-std");const b=Object.fromEntries(new FormData(f).entries());if(!b.name){toast("请填写命名","warn");return;}if(id){await API("/standards/"+id,{"method":"PUT",body:JSON.stringify(b)});}else{await API("/standards",{method:"POST",body:JSON.stringify(b)});}toast("已保存","success");closeModal();renderStandards();}
+async function delStd(id){if(!confirm("确认删除？"))return;await API("/standards/"+id,{method:"DELETE"});toast("已删除","success");renderStandards();}
+function uploadStdImg(id){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const fd=new FormData();fd.append("file",f);await fetch("/api/standards/"+id+"/image",{method:"POST",body:fd});toast("基准图已上传","success");renderStandards();};inp.click();}
+
+let issueFilter={status:"",type:""};
+async function renderIssues(){
+  const page=document.getElementById("page-issues");
+  // 静态外壳（表单 / 上传控件 / 工具条）只构建一次。
+  // 关键修复：原本每次 SSE 推送都整页重写 innerHTML，会把「选择 Excel 上传」里的
+  // <input type=file> 一并销毁重建；用户点开文件对话框的瞬间若发生重渲染，Chromium
+  // 会因所属 input 被移除而直接让标签页崩溃（表现为「点击上传就卡退、还没选文件」）。
+  // 现在外壳只建一次，SSE 只刷新下方 #insp-list，上传控件永不丢失。
+  if(!page.dataset.shell){
+    page.innerHTML=`
+      <div class="page-head"><div><div class="page-title">精准巡检 · 违规看板</div><div class="page-sub">放弃全店爬取，改为「精准对照表」：每条只比对您给定的 代理商链接 + 官旗标准链接 这一对，按 主图 / SKU / 详情 三类分库抓取并组对比，红框标注缺失与差异。</div></div></div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title">单链接巡检（阶段一 · 保证分类抓取准确）</div>
+        <div class="form-grid">
+          <div class="field"><label>代理商链接</label><input class="input" id="in-agent" placeholder="https://agent.example.com/item/123"></div>
+          <div class="field"><label>官旗标准链接</label><input class="input" id="in-official" placeholder="https://flagship.example.com/item/123"></div>
+          <div class="field" style="max-width:230px"><label>图片类型（选填）</label><select class="select" id="in-type"><option value="">全部（主图 + SKU + 详情）</option><option value="main">仅主图</option><option value="sku">仅 SKU</option><option value="detail">仅详情</option></select></div>
+          <div class="field" style="grid-column:1 / -1"><label>淘宝/天猫登录态 Cookie（抓取淘宝商品页必填）</label><input class="input" id="in-cookies" placeholder="从浏览器开发者工具复制：k=v; k2=v2 …（未登录的淘宝/天猫会被登录墙拦截，填此项才能抓到商品图）"></div>
+          <div class="field" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="addInspection()">开始单链接巡检</button></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title">淘宝/天猫登录（扫码免 Cookie）</div>
+        <div class="hint" style="margin-bottom:8px">点击下方按钮，系统会弹出浏览器窗口，请用手机淘宝扫码登录一次。登录状态自动保存到本地，后续抓取淘宝/天猫商品页无需再填 Cookie；Cookie 过期后只需重新扫码一次即可自动更新。</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button id="tb-login-btn" class="btn btn-primary" onclick="startTaobaoLogin()">扫码登录淘宝/天猫</button>
+          <button id="tb-cancel-btn" class="btn" style="display:none" onclick="cancelTaobaoLogin()">取消登录</button>
+          <span id="tb-login-status" class="login-status">未登录</span>
+          <a href="javascript:void(0)" onclick="clearTbLogin()" style="font-size:12px;color:var(--text-muted);margin-left:2px">清除登录状态</a>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title">批量导入（精准对照表 · 阶段二）</div>
+        <div class="hint" style="margin-bottom:10px">下载 Excel 模板，按列填写「代理商链接 / 官旗标准链接 / 图片类型」后上传，系统为每一行创建单链接巡检。</div>
+        <a class="btn" href="/api/template">下载对照表模板</a>
+        <label class="btn" style="margin-left:8px">选择 Excel 上传<input type="file" id="in-xlsx" accept=".xlsx,.xls" style="display:none" onchange="importXlsx(this)"></label>
+      </div>
+      <div class="toolbar">
+        <div class="seg" id="insp-seg"></div>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="batchNotify()">批量通知选中</button>
+      </div>
+      <div id="insp-list"></div>`;
+    page.dataset.shell="1";
+  }
+  // 以下仅刷新动态列表与过滤高亮，绝不触碰上传控件 / 已输入内容
+  const ps=[]; if(issueFilter.status) ps.push("status="+issueFilter.status);
+  let list=[]; try{ list=await API("/inspections?"+ps.join("&")); }catch(e){ list=[]; }
+  const groups={};
+  list.forEach(i=>{ const h=hostOf(i.agent_url)||"未分类店铺"; (groups[h]=groups[h]||[]).push(i); });
+  const allCards=Object.entries(groups).map(([h,items])=>{
+     const inner=items.map(insp=>cardHtml(insp)).join("");
+     return `<div class="group"><div class="group-head" onclick="toggleGroup(this)"><span class="chev">▸</span><b>${esc(h)}</b><span class="group-count">${items.length} 个商品</span></div><div class="group-body">${inner}</div></div>`;
+  }).join("");
+  document.getElementById("insp-list").innerHTML = Object.keys(groups).length?allCards:'<div class="empty">暂无巡检记录。先在上方「单链接巡检」粘贴一对链接，或批量导入对照表。</div>';
+  const segVals=[["","全部"],["pending","待处理"],["notified","已通知"],["modified","已修改"]];
+  document.getElementById("insp-seg").innerHTML = segVals.map(v=>`<button class="${issueFilter.status===v[0]?'active':''}" onclick="setIssueFilter('status','${v[0]}')">${v[1]}</button>`).join("");
+}
+function setIssueFilter(k,v){issueFilter[k]=v;renderIssues();}
+
+function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch(e){ return (u||'').slice(0,40); } }
+function enc(s){ return encodeURIComponent(s||''); }
+function imgTag(folder, name){ if(!name) return ''; return `<img src="/uploads/${folder}/${enc(name)}" onerror="this.style.display='none'">`; }
+
+function cardHtml(insp){
+  const st=insp.status||'pending';
+  const stMap={pending:'待处理',notified:'已通知',modified:'已修改'};
+  const stCls={pending:'pill-high',notified:'pill-warn',modified:'pill-low'}[st]||'';
+  const stateMap={queued:'队列中',running:'抓取中…',done:'已完成',error:'失败'};
+  const stateCls={queued:'st-queued',running:'st-running',done:'st-done',error:'st-error'}[insp.state]||'';
+  const spin=(insp.state==='running'||insp.state==='queued')?'<span class="spin"></span>':'';
+  const stateTxt=stateMap[insp.state]||insp.state||'';
+  const violation=(insp.cmp_main&&insp.cmp_main.has_diff)||(insp.cmp_sku&&insp.cmp_sku.mismatch)||(insp.cmp_detail&&insp.cmp_detail.mismatch);
+  const errAlert=(insp.state==='error'&&insp.error)?`<div class="insp-alert err">❌ 抓取失败：${esc(insp.error)}</div>`:'';
+  return `<div class="insp-card" id="card-${insp.id}">
+    <div class="insp-row" onclick="toggleCard(${insp.id})">
+      <input type="checkbox" class="check" data-id="${insp.id}" onclick="event.stopPropagation()">
+      <span class="chev2">▸</span>
+      <div class="insp-meta">
+        <div class="insp-url">代理商：<span class="muted">${esc(insp.agent_url||'')}</span></div>
+        <div class="insp-url">官旗：<span class="muted">${esc(insp.official_url||'')}</span></div>
+      </div>
+      <span class="pill ${stCls}">${stMap[st]}</span>
+      <span class="pill pill-sub ${stateCls}">${spin}${esc(stateTxt)}</span>
+      ${insp.image_type?`<span class="pill pill-sub">仅${insp.image_type}</span>`:''}
+      ${violation?'<span class="pill pill-high">有差异</span>':''}
+      <button class="btn btn-sm" style="margin-left:auto" onclick="event.stopPropagation();delInspection(${insp.id})">删除</button>
+    </div>
+    ${insp.note?`<div class="insp-alert">⚠️ ${esc(insp.note)}</div>`:''}
+    ${errAlert}
+    <div class="insp-detail" id="detail-${insp.id}" hidden></div>
+  </div>`;
+}
+
+function toggleGroup(head){ const b=head.parentElement.querySelector('.group-body'); const open=b.hidden; b.hidden=!open; head.querySelector('.chev').style.transform=open?'rotate(90deg)':'rotate(0)'; }
+async function toggleCard(id){
+  const d=document.getElementById('detail-'+id); const chev=document.querySelector('#card-'+id+' .chev2');
+  if(!d.hidden){ d.hidden=true; chev.style.transform='rotate(0)'; return; }
+  const insp=await API('/inspections/'+id);
+  if(insp.state!=='done'){ d.innerHTML='<div class="cmp-note">抓取 / 比对进行中（'+esc(insp.state||'')+'），完成后展开即可查看组对比。</div>'; }
+  else { d.innerHTML=renderCompare(insp); }
+  d.hidden=false; chev.style.transform='rotate(90deg)';
+}
+
+function cmpNoteMain(cm){ if(cm.skipped) return '未参与比对'; if(cm.missing) return '代理商缺少主图'; return '主图相似度 <b class="num">'+(cm.score!=null?cm.score:0)+'%</b> '+(cm.has_diff?'<span class="pill pill-high">差异</span>':'<span class="pill pill-low">一致</span>'); }
+function cmpNoteSku(cs){ if(cs.skipped) return ''; if(cs.mismatch) return 'SKU 差异：代理缺失 '+(cs.missing_in_agent||[]).length+' 项，官旗缺失 '+(cs.missing_in_official||[]).length+' 项，错位/不符 '+((cs.pairs||[]).filter(p=>p.has_diff).length)+' 项'; return 'SKU 图列表一致'; }
+function cmpNoteDetail(cd){ if(cd.skipped) return ''; if(cd.mismatch) return '详情图：官旗有而代理缺 '+(cd.missing_in_agent||[]).length+' 张，代理多余 '+(cd.extra_in_agent||[]).length+' 张'; return '详情图一致'; }
+
+function renderCompare(insp){
+  const offM=(insp.off_main||[]), agM=(insp.ag_main||[]);
+  const cm=insp.cmp_main||{};
+  let mainBox='';
+  if(cm.diff_bbox){ const b=cm.diff_bbox; mainBox=`<div class="red-box" style="left:${b.x*100}%;top:${b.y*100}%;width:${b.w*100}%;height:${b.h*100}%"></div>`; }
+  else if(cm.has_diff){ mainBox=`<div class="red-box" style="left:2%;top:2%;width:96%;height:96%"></div>`; }
+  const mainHtml=`<div class="cmp-block"><div class="cmp-cap">主图对比区</div>
+    <div class="cmp-row">
+      <div class="cmp-side"><div class="cap">官旗标准（主图）</div>${offM[0]?imgTag('main',offM[0]):'<div class="miss">缺主图</div>'}</div>
+      <div class="cmp-side"><div class="cap">代理商实况（主图）</div>${agM[0]?`<div class="cmp-wrap">${imgTag('main',agM[0])}${mainBox}</div>`:'<div class="miss">缺主图</div>'}</div>
+    </div>
+    <div class="cmp-note">${cmpNoteMain(cm)}</div></div>`;
+
+  const cs=insp.cmp_sku||{};
+  let skuHtml='';
+  if(cs.skipped){ skuHtml='<div class="cmp-note hint">本巡检仅比对「'+esc(insp.image_type||'')+'」分类，SKU 未参与比对。</div>'; }
+  else {
+    const offS=(insp.off_sku||[]), agS=(insp.ag_sku||[]);
+    const n=Math.max(offS.length,agS.length,(cs.pairs||[]).length);
+    let offCells='', agCells='';
+    for(let i=0;i<n;i++){
+      const offOk=i<offS.length, agOk=i<agS.length;
+      const pair=(cs.pairs||[]).find(p=>p.index===i);
+      const mismatch=pair&&pair.has_diff;
+      offCells+=`<div class="sku-cell">${offOk?imgTag('sku',offS[i]):'<div class="miss sm">—</div>'}</div>`;
+      if(agOk){
+        const box=mismatch?`<div class="red-box" style="left:2%;top:2%;width:96%;height:96%"></div>`:'';
+        agCells+=`<div class="sku-cell ${mismatch?'bad':''}">${imgTag('sku',agS[i])}${box}${mismatch?'<span class="miss-badge">差异</span>':''}</div>`;
+      } else {
+        agCells+=`<div class="sku-cell bad"><div class="miss sm">缺失</div><span class="miss-badge">缺失</span></div>`;
+      }
+    }
+    skuHtml=`<div class="cmp-block"><div class="cmp-cap">SKU 图列表对比区</div>
+      <div class="cmp-row"><div class="cmp-side"><div class="cap">官旗 SKU（按序）</div><div class="sku-list">${offCells}</div></div>
+      <div class="cmp-side"><div class="cap">代理商 SKU（按序）</div><div class="sku-list">${agCells}</div></div></div>
+      <div class="cmp-note">${cmpNoteSku(cs)}</div></div>`;
+  }
+
+  const cd=insp.cmp_detail||{};
+  let detHtml='';
+  if(cd.skipped){ detHtml='<div class="cmp-note hint">本巡检仅比对「'+esc(insp.image_type||'')+'」分类，详情图未参与比对。</div>'; }
+  else {
+    const offD=(insp.off_detail||[]), agD=(insp.ag_detail||[]);
+    const missA=cd.missing_in_agent||[];
+    let offCells='', agCells='';
+    offD.forEach(n=>{ offCells+=`<div class="sku-cell">${imgTag('detail',n)}</div>`; });
+    agD.forEach((n,i)=>{ const miss=missA.indexOf(i)>=0; agCells+=`<div class="sku-cell ${miss?'bad':''}">${imgTag('detail',n)}${miss?'<span class="miss-badge">缺失</span>':''}</div>`; });
+    detHtml=`<div class="cmp-block"><div class="cmp-cap">详情图对比区</div>
+      <div class="cmp-row"><div class="cmp-side"><div class="cap">官旗详情图</div><div class="sku-list">${offCells||'<div class="miss sm">无</div>'}</div></div>
+      <div class="cmp-side"><div class="cap">代理商详情图</div><div class="sku-list">${agCells||'<div class="miss sm">无</div>'}</div></div></div>
+      <div class="cmp-note">${cmpNoteDetail(cd)}</div></div>`;
+  }
+
+  const st=insp.status||'pending';
+  return `<div class="compare-view">
+    ${mainHtml}${skuHtml}${detHtml}
+    <div class="cmp-foot">
+      <div class="field" style="flex:1;margin:0"><label>处理状态</label><select class="select" id="iss-status-${insp.id}">${["pending","notified","modified"].map(s=>`<option value="${s}" ${st===s?'selected':''}>${({pending:"待处理",notified:"已通知",modified:"已修改"})[s]}</option>`).join('')}</select></div>
+      <button class="btn" onclick="recrawlInspection(${insp.id})">重新抓取复核</button>
+      <button class="btn" onclick="recheckInspection(${insp.id})">上传复核图</button>
+      <button class="btn btn-primary" onclick="saveInspection(${insp.id})">保存</button>
+    </div>
+    <div class="field" style="margin-top:10px"><label>处理备注</label><textarea class="textarea" id="iss-note-${insp.id}">${esc(insp.note||'')}</textarea></div>
+  </div>`;
+}
+
+async function addInspection(){
+  const agent=document.getElementById('in-agent').value.trim();
+  const official=document.getElementById('in-official').value.trim();
+  const type=document.getElementById('in-type').value;
+  const cookies=document.getElementById('in-cookies').value.trim();
+  if(!agent||!official){ toast('请填写代理商链接与官旗标准链接','warn'); return; }
+  // 淘宝/天猫商品页需登录态；若既没手填 Cookie、本地也没缓存登录态，则弹窗引导扫码登录
+  const isTB=/taobao\.com|tmall\.com/i.test(agent+' '+official);
+  if(isTB && !cookies && !(window._tbAuth && window._tbAuth.auth_file_exists)){
+    showTbLoginModal(agent,official,type);
+    return;
+  }
+  const r=await API('/inspections',{method:'POST',body:JSON.stringify({agent_url:agent,official_url:official,image_type:type,cookies:cookies})});
+  toast('已提交，后台正按 主图/SKU/详情 分类抓取并比对…','info');
+  pollInspection(r.id);
+}
+async function pollInspection(id){
+  for(let k=0;k<60;k++){
+    await new Promise(r=>setTimeout(r,1000));
+    const insp=await API('/inspections/'+id);
+    if(insp.state==='done'||insp.state==='error'){
+      if(insp.state==='error') toast('巡检失败：'+(insp.error||'未知错误'),'error');
+      else toast('巡检完成：'+(insp.status==='pending'?'发现差异，已标记待处理':'图片一致，已标记已修改'),'success');
+      if(document.getElementById('detail-'+id) && !document.getElementById('detail-'+id).hidden){ const d=document.getElementById('detail-'+id); d.innerHTML=renderCompare(insp); }
+      renderIssues();
+      return;
+    }
+  }
+  toast('巡检仍在后台进行，可在看板查看','info'); renderIssues();
+}
+async function recrawlInspection(id){
+  toast('正在按分类重新抓取并比对…','info');
+  try{ await fetch('/api/inspections/'+id+'/recrawl',{method:'POST'}); }catch(e){}
+  pollInspection(id);
+}
+function recheckInspection(id){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
+    const fd=new FormData(); fd.append('file',f);
+    const r=await fetch('/api/inspections/'+id+'/recheck',{method:'POST',body:fd}).then(x=>x.json());
+    toast('复核完成，主图相似度 '+(r.cmp_main?r.cmp_main.score:'?')+'%','success');
+    if(document.getElementById('detail-'+id)){ const insp=await API('/inspections/'+id); document.getElementById('detail-'+id).innerHTML=renderCompare(insp); }
+    renderIssues();
+  };
+  inp.click();
+}
+async function saveInspection(id){
+  const st=document.getElementById('iss-status-'+id).value;
+  const note=document.getElementById('iss-note-'+id).value;
+  await API('/inspections/'+id,{method:'PATCH',body:JSON.stringify({status:st,note:note})});
+  toast('已保存','success'); closeModal(); renderIssues();
+}
+async function delInspection(id){ if(!confirm('确定删除该巡检记录？')) return; await API('/inspections/'+id,{method:'DELETE'}); toast('已删除','info'); renderIssues(); }
+async function importXlsx(input){
+  const f=input.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file',f);
+  toast('正在解析对照表并创建巡检…','info');
+  try{
+    const resp=await fetch('/api/inspections/import',{method:'POST',body:fd});
+    const r=await resp.json();
+    let msg='已导入 '+r.created+' 条巡检，后台正按并发上限逐条抓取比对';
+    if(r.note) msg+='；'+r.note;
+    toast(msg,'success');
+  }catch(e){ toast('导入失败：'+(e&&e.message?e.message:'服务器返回异常，请检查文件格式'),'error'); }
+  input.value='';
+  try{ renderIssues(); }catch(_){}
+}
+// ---------- 本地登录唤醒（手机淘宝扫码，免手动复制 Cookie） ----------
+let _pendingTb=null;
+async function refreshTbLoginStatus(){
+  try{ const st=await fetch('/api/taobao-login/status').then(x=>x.json()); updateTbLoginStatus(st); }catch(e){}
+}
+function updateTbLoginStatus(st){
+  window._tbAuth=st;
+  const el=document.getElementById('tb-login-status'); if(!el) return;
+  const btn=document.getElementById('tb-login-btn');
+  const cancel=document.getElementById('tb-cancel-btn');
+  if(st.running){
+    el.textContent='扫码登录中…'; el.className='login-status pending';
+    if(btn){ btn.textContent='重新扫码登录'; btn.disabled=false; }
+    if(cancel){ cancel.style.display='inline-block'; }
+  }
+  else if(st.logged_in){ const t=st.saved_at?st.saved_at.replace('T',' ').slice(0,19):'已缓存'; el.textContent='已登录（'+t+'）'; el.className='login-status ok';
+    if(btn){ btn.textContent='扫码登录淘宝/天猫'; } if(cancel){ cancel.style.display='none'; } }
+  else if(st.error && st.error.indexOf('登录窗口已关闭')>=0){ el.textContent='窗口已关闭，可重新扫码'; el.className='login-status err';
+    if(btn){ btn.textContent='重新扫码登录'; btn.disabled=false; } if(cancel){ cancel.style.display='none'; } }
+  else if(st.error){ const msg=st.error.length>16?st.error.slice(0,16)+'…':st.error; el.textContent='登录失败：'+msg; el.className='login-status err'; el.title=st.error;
+    if(btn){ btn.textContent='重新扫码登录'; btn.disabled=false; } if(cancel){ cancel.style.display='none'; } }
+  else if(st.auth_file_exists){ el.textContent='已登录（本地缓存）'; el.className='login-status ok';
+    if(btn){ btn.textContent='扫码登录淘宝/天猫'; } if(cancel){ cancel.style.display='none'; } }
+  else { el.textContent='未登录'; el.className='login-status';
+    if(btn){ btn.textContent='扫码登录淘宝/天猫'; } if(cancel){ cancel.style.display='none'; } }
+}
+async function startTaobaoLogin(){
+  const r=await fetch('/api/taobao-login/start',{method:'POST'}).then(x=>x.json());
+  if(!r.ok){ toast(r.error||'启动登录失败','error'); return; }
+  toast('已打开浏览器窗口，请用手机淘宝扫码登录（关闭窗口或点「取消登录」可随时重来）','info',10000);
+  pollTbLogin(null);
+}
+async function cancelTaobaoLogin(){
+  await fetch('/api/taobao-login/cancel',{method:'POST'}).then(()=>{});
+  toast('已取消本次登录，可重新点击扫码','info');
+  setTimeout(refreshTbLoginStatus,500);
+}
+async function pollTbLogin(onSuccess){
+  for(let k=0;k<60;k++){
+    await new Promise(r=>setTimeout(r,3000));
+    let st; try{ st=await fetch('/api/taobao-login/status').then(x=>x.json()); }catch(e){ return; }
+    updateTbLoginStatus(st);
+    if(st.logged_in){ if(onSuccess) onSuccess(); return; }
+    if(st.error){ toast('登录失败：'+st.error,'error'); return; }
+    if(!st.running) return;
+  }
+  toast('登录超时，请重试或手动填写 Cookie','warn');
+}
+function showTbLoginModal(agent,official,type){
+  _pendingTb={agent,official,type};
+  openModal('需要淘宝/天猫登录',
+    '<p>您要巡检的是淘宝/天猫商品页，需要登录态才能抓取真实商品图。</p>'+
+    '<p>点击「去扫码登录」后，系统会打开浏览器窗口，请用<strong>手机淘宝扫码登录</strong>（约 1 分钟内完成）。登录成功后系统会自动保存登录状态，并<strong>立即开始本次巡检</strong>。</p>'+
+    '<p class="hint">登录状态会缓存到本地，后续抓取无需重复扫码；Cookie 过期后只需再扫码一次即可自动更新。</p>',
+    '<button class="btn" onclick="closeModal()">取消</button>'+
+    '<button class="btn btn-primary" onclick="tbLoginAndStart()">去扫码登录</button>');
+}
+async function tbLoginAndStart(){
+  const p=_pendingTb; _pendingTb=null; closeModal();
+  const r=await fetch('/api/taobao-login/start',{method:'POST'}).then(x=>x.json());
+  if(!r.ok){ toast(r.error||'启动登录失败','error'); return; }
+  toast('已打开浏览器窗口，请在 1 分钟内用手机淘宝扫码登录，登录后将自动开始巡检','info',10000);
+  await pollTbLogin(async ()=>{
+    const rr=await API('/inspections',{method:'POST',body:JSON.stringify({agent_url:p.agent,official_url:p.official,image_type:p.type,cookies:''})});
+    toast('登录成功，已开始巡检抓取…','success');
+    pollInspection(rr.id);
+  });
+}
+async function clearTbLogin(){
+  await fetch('/api/taobao-login/clear',{method:'POST'}).then(()=>{});
+  toast('已清除本地登录状态','info');
+  refreshTbLoginStatus();
+}
+async function batchNotify(){
+  const ids=[...document.querySelectorAll('.check:checked')].map(c=>+c.dataset.id);
+  if(!ids.length){ toast('请先勾选巡检项','warn'); return; }
+  const res=await API('/batch-notify',{method:'POST',body:JSON.stringify({ids})});
+  document.getElementById('batch-body').innerHTML=res.map(m=>`<div class="panel" style="padding:14px;margin-bottom:10px"><div style="font-weight:600;font-size:13px">${esc(m.shop)} — ${esc(m.subject)}</div><pre style="white-space:pre-wrap;font-size:12px;color:var(--text-muted);margin:8px 0 0;font-family:var(--font-sans)">${esc(m.body)}</pre></div>`).join("")||'<div class="empty">无内容</div>';
+  document.getElementById('modal-batch').classList.add('show'); renderIssues();
+}
+
+async function renderSettings(){
+  const s=await API("/settings");
+  document.getElementById("page-settings").innerHTML=`<div class="page-head"><div><div class="page-title">项目设置</div><div class="page-sub">阈值与通知模板真实存库，影响巡检判定与批量通知内容</div></div></div>
+    <div class="panel" style="margin-bottom:14px"><div class="panel-title">比对与判定</div>
+      <div class="form-grid">
+        <div class="field"><label>视觉合规阈值 %（低于即标红）</label><input class="input num" id="st-thr" type="number" step="0.1" value="${esc(s.visual_threshold)}"></div>
+        <div class="field"><label>价格容差 ¥（超过即违规）</label><input class="input num" id="st-tol" type="number" step="0.1" value="${esc(s.price_tolerance)}"></div>
+      </div></div>
+    <div class="panel"><div class="panel-title">整改通知邮件模板（支持变量 {"{shop}"} {"{sku}"} {"{type}"} {"{detail}"}）</div>
+      <div class="field"><label>主题</label><input class="input" id="st-subj" value="${esc(s.email_subject)}"></div>
+      <div class="field"><label>正文</label><textarea class="textarea" id="st-body">${esc(s.email_body)}</textarea></div>
+      <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+    </div>`;
+}
+async function saveSettings(){const b={visual_threshold:document.getElementById("st-thr").value,price_tolerance:document.getElementById("st-tol").value,email_subject:document.getElementById("st-subj").value,email_body:document.getElementById("st-body").value};await API("/settings",{method:"PUT",body:JSON.stringify(b)});toast("设置已保存","success");}
+
+/* ---------- 成员 / 身份登记 ---------- */
+function renderUserCard(){
+  const el=document.getElementById("user-card");if(!el)return;
+  let m=null;try{m=JSON.parse(localStorage.getItem("currentMember")||"null");}catch(e){}
+  if(m&&m.name){el.innerHTML=`<span class="avatar" style="width:34px;height:34px;background:#4F46E5;font-size:14px">${esc(m.name.slice(0,1))}</span><div><div style="font-size:13px;font-weight:600">${esc(m.name)}</div><div style="font-size:11px;color:var(--text-subtle)">${esc(m.department||"")}</div></div>`;}
+}
+function showGate(){document.getElementById("gate").classList.add("show");setTimeout(()=>{const n=document.getElementById("gate-name");if(n)n.focus();},60);}
+async function submitGate(){
+  const name=document.getElementById("gate-name").value.trim();
+  const dept=document.getElementById("gate-dept").value.trim();
+  if(!name||!dept){toast("请填写真实姓名与所在部门","warn");return;}
+  try{
+    const m=await API("/members",{method:"POST",body:JSON.stringify({name,department:dept})});
+    localStorage.setItem("currentMember",JSON.stringify(m));
+    document.getElementById("gate").classList.remove("show");
+    renderUserCard();
+    startCollab();
+    toast("欢迎，"+name,"success");
+  }catch(e){toast("登记失败："+(e.message||"未知错误"),"error");}
+}
+async function renderMembers(){
+  let list=[];try{list=await API("/members");}catch(e){list=[];}
+  const raw=localStorage.getItem("currentMember");let me=null;try{me=JSON.parse(raw||"null");}catch(e){}
+  const cards=list.map(m=>`<div class="member-card" data-id="${m.id}">
+    <span class="avatar" style="width:40px;height:40px;background:#4F46E5;font-size:16px">${esc((m.name||"?").slice(0,1))}</span>
+    <div class="mc-info"><div class="mc-name">${esc(m.name)}${me&&me.id===m.id?' <span class="pill-ok">我</span>':''}</div><div class="mc-dept">${esc(m.department)}</div><div class="mc-time">加入 ${esc(m.created_at||"")}</div></div>
+    <button class="btn tc-del" title="移除该成员" onclick="delMember(${m.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+  </div>`).join("")||'<div class="empty">暂无成员。进入系统时登记身份即可加入此列表。</div>';
+  document.getElementById("page-members").innerHTML=`<div class="page-head"><div><div class="page-title">成员</div><div class="page-sub">进入系统的每位用户都会在此登记真实姓名与所在部门，便于追溯巡检操作归属；绿点表示该成员当前在线。</div></div></div>
+    <div class="member-grid">${cards}</div>`;
+  if(Collab._online && Collab._online.length) Collab.markMembersOnline();
+}
+async function delMember(id){
+  if(!confirm("确定移除该成员记录？"))return;
+  try{await API("/members/"+id,{method:"DELETE"});}catch(e){toast("移除失败","error");return;}
+  const me=JSON.parse(localStorage.getItem("currentMember")||"null");
+  if(me&&me.id===id){localStorage.removeItem("currentMember");renderUserCard();showGate();}
+  toast("已移除","info");renderMembers();
+}
+
+/* ---------- 启动：检查身份，未登记则弹门禁 ---------- */
+(async function boot(){
+  let m=null;try{m=JSON.parse(localStorage.getItem("currentMember")||"null");}catch(e){}
+  renderUserCard();
+  startCollab();
+  if(m&&m.id){renderPage("dashboard");}
+  else{renderPage("dashboard");showGate();}
+})();
+</script>
+</body>
+</html>

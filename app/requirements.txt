@@ -1,0 +1,16 @@
+# 依赖清单 —— 已对齐「验证可用」的开发环境（WorkBuddy 托管 venv，2026-08-20）
+# 注意：crawler.py / app.py 强依赖 playwright、openpyxl、requests，缺失会导致应用启动即崩。
+# 安装方式：pip install -r requirements.txt
+#   Playwright 额外需要浏览器内核：pip install 后用 `playwright install chromium` 拉取 Chromium。
+# 若某版本在你们的私有/内网索引中报 “could not find version”，请对齐到对应索引中的可用版本
+# （本文件记录的是开发机实测可运行版本，仅作基线参考）。
+
+fastapi==0.141.1
+uvicorn[standard]==0.52.3
+pillow==12.3.0
+numpy==2.5.2
+python-multipart==0.0.32
+gunicorn==23.0.0
+requests==2.34.2
+playwright==1.62.0
+openpyxl==3.1.5

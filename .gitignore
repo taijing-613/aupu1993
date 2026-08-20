@@ -1,0 +1,38 @@
+# ============ Python ============
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ============ 密钥 / 登录态（绝不入库） ============
+# auth.json 内含淘宝真实登录态 Cookie，泄露等同于账号被盗用
+app/auth.json
+
+# ============ 运行时数据（按需本地保留，不入库） ============
+# 覆盖所有 SQLite 产物（含已配置的 app.db 与历史残留的 data.db）
+app/*.db
+app/*.db-wal
+app/*.db-shm
+app/*.sqlite
+app/*.sqlite3
+app/.guard.lock
+app/server.log
+
+# 用户上传的巡检图片为运行时数据；保留目录、忽略内容
+app/uploads/*
+!app/uploads/.gitkeep
+
+# ============ 残留/重复产物（非源码） ============
+# 根目录的 index.html 是旧版残留，线上服务的是 app/index.html
+/index.html
+
+# ============ WorkBuddy 内部项目数据 ============
+.workbuddy/
+
+# ============ 操作系统 / 临时 ============
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
