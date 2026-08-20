@@ -124,6 +124,17 @@ def init():
         pass
     # 状态精简：取消「已核销」，统一用「已修改」作为闭环终态
     cur.execute("UPDATE issues SET status='modified' WHERE status='verified'")
+    # 增量迁移：inspections 增加「独立核销态 + 凭证留痕」所需字段
+    for col, typ in (
+        ("verified_at TEXT", "TEXT"),
+        ("verified_by INTEGER", "INTEGER"),
+        ("verified_by_name TEXT", "TEXT"),
+        ("evidence_path TEXT", "TEXT"),
+    ):
+        try:
+            cur.execute(f"ALTER TABLE inspections ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
     c.commit()
     c.close()
 

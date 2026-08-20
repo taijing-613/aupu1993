@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: taobao-inspector
+    runtime: docker
+    dockerfilePath: ./app/Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000
+      - key: DATA_DIR
+        value: /app/data
+    # 持久卷：SQLite 与抓取图片在重启后保留
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1

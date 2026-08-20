@@ -36,17 +36,19 @@ docker run -d --name ai-audit \
 # 访问 http://<服务器IP>:8000
 ```
 
-## 方式二：Railway
-1. 新建 Project → Deploy from GitHub（连接本仓库的 `app/` 子目录，或单独把 `app/` 推到一个仓库）。
-2. Start Command 填：`uvicorn app:app --host 0.0.0.0 --port $PORT`
-3. 在 Variables 里加：`DATA_DIR=/app/data`，并在 Volumes 中挂载 `/app/data`（Railway 提供持久磁盘）。
-4. 部署完成后 Railway 给出公开 URL。
+## 方式二：Railway（推荐，一键公开 URL）
+1. 新建 Project → Deploy from GitHub（连接本仓库的 `app/` 子目录；仓库根已附带 `app/railway.json` 自动识别）。
+2. 仓库内的 `railway.json` 已配置好 `Dockerfile` 构建与 `gunicorn` 启动命令、`/api/health` 健康检查、`DATA_DIR=/app/data` 变量。
+3. 在 Volumes 中挂载 `/app/data`（Railway 提供持久磁盘），保证数据与上传图片重启不丢。
+4. 部署完成后 Railway 自动给出**公开 URL**，所有人可直接访问。
 
-## 方式三：Render
-1. New → Web Service，连接仓库。
-2. Build Command：`pip install -r requirements.txt`
-3. Start Command：`uvicorn app:app --host 0.0.0.0 --port $PORT`
-4. 在 Advanced → Add Disk 挂载 `/app/data`，并设置环境变量 `DATA_DIR=/app/data`。
+## 方式三：Render（一键公开 URL）
+1. New → Web Service，连接仓库；Runtime 选 Docker（仓库已含 `app/render.yaml`）。
+2. `render.yaml` 已声明 Dockerfile、健康检查 `/api/health`、环境变量与 `/app/data` 持久盘。
+3. 部署完成后 Render 给出**公开 URL**。
+
+> 若手动指定启动命令（不使用 yaml），请填：
+> `gunicorn app:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --workers 1`
 
 ## 数据持久化重要提示
 - SQLite 文件写在 `DATA_DIR/app.db`，图片写在 `DATA_DIR/uploads/`。
@@ -67,6 +69,11 @@ playwright install chromium
 
 ## 首次访问
 打开站点后，系统会要求每位用户先填写**真实姓名 + 所在部门**（登记到 `members` 表），之后左侧「成员」页可见全部登记用户。其余店铺管理 / 视觉标准库 / 违规看板的操作与本地完全一致。
+
+## 本版新增能力
+- **数据报表（左侧「数据报表」页）**：实时统计巡检总量、处理状态分布（待处理/已通知/已修改/已核销）、整改合格率、近 14 天趋势、Top 店铺；支持一键导出 CSV（接口 `GET /api/inspections/export`、统计 `GET /api/stats`）。
+- **核销留痕（违规看板 → 展开某条巡检 → 底部）**：整改完成可「上传凭证核销」，标记独立「已核销」状态并留存整改凭证截图、核销人、核销时间；支持「撤回核销」退回「已修改」继续跟进。所有操作记入 `activity_log` 审计。
+- **门禁与扫码登录稳定性收口**：开场身份登记报错已显示服务器真实原因；淘宝扫码登录检测改为「只看登录态 Cookie」，避免卡在「正在登录」。
 
 ## 多人实时协作（已内置）
 本应用支持**多人同时在线协作、彼此实时可见对方的增删改**：

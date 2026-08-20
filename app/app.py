@@ -19,7 +19,7 @@ import collections
 import queue
 
 import uvicorn
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -982,6 +982,36 @@ def list_inspections(status: str = None, state: str = None):
     return [_insp_dict(r) for r in db.list_inspections(status, state)]
 
 
+@app.get("/api/inspections/export")
+def export_inspections():
+    """导出全部巡检为 CSV（含核销留痕字段），供数据报表离线分析。"""
+    import csv
+    c = db.conn()
+    rows = [dict(r) for r in c.execute("SELECT * FROM inspections ORDER BY id DESC").fetchall()]
+    c.close()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["ID", "标题", "代理商链接", "官旗链接", "图片类型", "处理状态", "抓取状态",
+                "主图相似度", "SKU差异", "详情缺失数", "备注", "核销人", "核销时间", "创建时间"])
+    for r in rows:
+        cm = _safe_json(r.get("cmp_main"))
+        cs = _safe_json(r.get("cmp_sku"))
+        cd = _safe_json(r.get("cmp_detail"))
+        miss = cd.get("missing_in_agent") if isinstance(cd, dict) else None
+        w.writerow([
+            r["id"], r.get("title") or "", r.get("agent_url"), r.get("official_url"),
+            r.get("image_type") or "全部", r.get("status"), r.get("state"),
+            cm.get("score", "") if isinstance(cm, dict) else "",
+            ("是" if isinstance(cs, dict) and cs.get("mismatch") else "否"),
+            (len(miss) if isinstance(miss, list) else 0),
+            r.get("note") or "", r.get("verified_by_name") or "", r.get("verified_at") or "",
+            r.get("created_at"),
+        ])
+    return Response(content=buf.getvalue().encode("utf-8-sig"),
+                    media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": "attachment; filename=inspections_export.csv"})
+
+
 @app.get("/api/inspections/{iid}")
 def get_inspection(iid: int):
     row = db.get_inspection(iid)
@@ -1054,6 +1084,41 @@ async def recheck_inspection(iid: int, file: UploadFile = File(...), request: Re
     broadcast("inspections", "update",
               f"上传复核图整改巡检 #{iid}（相似度 {cmp_main.get('score')}%）", request, iid)
     return _insp_dict(db.get_inspection(iid))
+
+
+@app.post("/api/inspections/{iid}/verify")
+async def verify_inspection(iid: int, file: UploadFile = File(...),
+                            note: str = Form(""), request: Request = None):
+    """核销（独立终态）：上传整改凭证截图 + 备注，标记「已核销」并留痕（谁/何时/凭证）。"""
+    row = db.get_inspection(iid)
+    if not row:
+        raise HTTPException(404)
+    name = _save_to_folder("evidence", file)
+    actor_id, actor_name = _actor(request)
+    c = db.conn()
+    c.execute(
+        "UPDATE inspections SET status='verified', evidence_path=?, verified_at=CURRENT_TIMESTAMP, "
+        "verified_by=?, verified_by_name=?, note=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+        (name, actor_id, actor_name, (note or "").strip() or row.get("note"), iid))
+    c.commit(); c.close()
+    db.log_activity(actor_id, actor_name, "verify", "inspections",
+                    f"核销巡检 #{iid}（凭证: {name}）", iid)
+    broadcast("inspections", "verify", f"核销巡检 #{iid}", request, iid,
+              actor_id=actor_id, actor_name=actor_name)
+    return _insp_dict(db.get_inspection(iid))
+
+
+@app.post("/api/inspections/{iid}/reopen")
+async def reopen_inspection(iid: int, request: Request = None):
+    """撤回核销：将「已核销」退回「已修改」，便于复核不通过时重新跟进。"""
+    if not db.get_inspection(iid):
+        raise HTTPException(404)
+    row = db.update_inspection(iid, status="modified")
+    actor_id, actor_name = _actor(request)
+    db.log_activity(actor_id, actor_name, "reopen", "inspections", f"撤回核销巡检 #{iid}", iid)
+    broadcast("inspections", "update", f"撤回核销巡检 #{iid}", request, iid,
+              actor_id=actor_id, actor_name=actor_name)
+    return _insp_dict(row)
 
 
 @app.get("/api/template")
@@ -1148,6 +1213,44 @@ async def batch_notify(request: Request):
     broadcast("inspections", "notify", f"批量发送了 {len(ids)} 条整改通知", request)
     return out
 
+
+def _safe_json(v):
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except Exception:
+            return {}
+    return v or {}
+
+
+@app.get("/api/stats")
+def stats():
+    """数据报表统计：总量、各状态/各抓取态分布、合格率、近 14 天趋势、Top 店铺。"""
+    c = db.conn()
+    total = c.execute("SELECT COUNT(*) n FROM inspections").fetchone()["n"]
+    by_status, by_state = {}, {}
+    for s in ("pending", "notified", "modified", "verified"):
+        by_status[s] = c.execute("SELECT COUNT(*) n FROM inspections WHERE status=?", (s,)).fetchone()["n"]
+    for s in ("queued", "running", "done", "error"):
+        by_state[s] = c.execute("SELECT COUNT(*) n FROM inspections WHERE state=?", (s,)).fetchone()["n"]
+    diff_count = c.execute(
+        "SELECT COUNT(*) n FROM inspections WHERE state='done' AND status='pending'").fetchone()["n"]
+    consistent = c.execute(
+        "SELECT COUNT(*) n FROM inspections WHERE state='done' AND status!='pending'").fetchone()["n"]
+    trend = [dict(r) for r in c.execute(
+        "SELECT substr(created_at,1,10) d, COUNT(*) n FROM inspections "
+        "WHERE created_at >= date('now','-13 days') GROUP BY d ORDER BY d").fetchall()]
+    top_shops = [dict(r) for r in c.execute(
+        "SELECT shop_host, COUNT(*) n FROM inspections WHERE shop_host<>'' "
+        "GROUP BY shop_host ORDER BY n DESC LIMIT 10").fetchall()]
+    c.close()
+    resolved = by_status.get("modified", 0) + by_status.get("verified", 0)
+    pass_rate = round(resolved / total * 100, 1) if total else 0.0
+    return {
+        "total": total, "by_status": by_status, "by_state": by_state,
+        "diff_count": diff_count, "consistent": consistent,
+        "pass_rate": pass_rate, "trend": trend, "top_shops": top_shops,
+    }
 
 
 def _f(v):
