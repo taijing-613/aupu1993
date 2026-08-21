@@ -9,6 +9,10 @@ env/
 # ============ 密钥 / 登录态（绝不入库） ============
 # auth.json 内含淘宝真实登录态 Cookie，泄露等同于账号被盗用
 app/auth.json
+# .env 含视觉模型 API Key 等敏感配置，绝不入库（用 .env.example 作模板）
+.env
+app/.env
+.env.local
 
 # ============ 运行时数据（按需本地保留，不入库） ============
 # 覆盖所有 SQLite 产物（含已配置的 app.db 与历史残留的 data.db）

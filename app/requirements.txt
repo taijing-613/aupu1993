@@ -1,5 +1,5 @@
 # 依赖清单 —— 已对齐「验证可用」的开发环境（WorkBuddy 托管 venv，2026-08-20）
-# 注意：crawler.py / app.py 强依赖 playwright、openpyxl、requests，缺失会导致应用启动即崩。
+# 注意：crawler.py / app.py / vision_llm.py 强依赖 playwright、openpyxl、requests、pillow，缺失会导致应用启动或比对即崩。
 # 安装方式：pip install -r requirements.txt
 #   Playwright 额外需要浏览器内核：pip install 后用 `playwright install chromium` 拉取 Chromium。
 # 若某版本在你们的私有/内网索引中报 “could not find version”，请对齐到对应索引中的可用版本

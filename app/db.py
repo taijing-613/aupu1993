@@ -100,6 +100,10 @@ def init():
     )
     cur.execute("INSERT OR IGNORE INTO settings(k,v) VALUES('visual_threshold','90')")
     cur.execute("INSERT OR IGNORE INTO settings(k,v) VALUES('price_tolerance','5')")
+    # AI 视觉大模型比对（OpenAI 兼容接口；API Key 走环境变量，绝不入库）
+    cur.execute("INSERT OR IGNORE INTO settings(k,v) VALUES('vision_enabled','0')")
+    cur.execute("INSERT OR IGNORE INTO settings(k,v) VALUES('vision_base_url','https://api.openai.com/v1')")
+    cur.execute("INSERT OR IGNORE INTO settings(k,v) VALUES('vision_model','gpt-4o')")
     cur.execute(
         "INSERT OR IGNORE INTO email_template(id,subject,body) VALUES(1,?,?)",
         (

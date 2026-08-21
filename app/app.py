@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 import db
 import compare
 import crawler
+import vision_llm
 from PIL import Image, ImageDraw
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -524,9 +525,13 @@ def get_settings():
 async def put_settings(request: Request):
     b = await request.json()
     c = db.conn()
-    for k in ("visual_threshold", "price_tolerance"):
-        if k in b:
-            c.execute("INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=?", (k, str(b[k]), str(b[k])))
+    for k in ("visual_threshold", "price_tolerance", "vision_enabled",
+              "vision_base_url", "vision_model"):
+        if k in b and b[k] is not None:
+            v = b[k]
+            if isinstance(v, bool):
+                v = "1" if v else "0"
+            c.execute("INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=?", (k, str(v), str(v)))
     if "email_subject" in b or "email_body" in b:
         t = c.execute("SELECT subject,body FROM email_template WHERE id=1").fetchone()
         subj = b.get("email_subject", t["subject"])
@@ -536,6 +541,34 @@ async def put_settings(request: Request):
     c.close()
     broadcast("settings", "update", "更新了项目设置（阈值/通知模板）", request)
     return {"ok": True}
+
+
+@app.get("/api/vision/self-test")
+def vision_self_test():
+    """视觉模型连通性自检：读配置 + 环境变量 Key，做一次最小调用（或 mock）。"""
+    cfg = _vision_cfg()
+    if not cfg["enabled"]:
+        return {"ok": False, "stage": "disabled",
+                "message": "视觉模型未启用（项目设置中开启后重试）"}
+    # 本地无网/无 Key 的 mock 模式：直接走 vision_compare 的 mock 分支，验证整条链路
+    if os.environ.get("VISION_MOCK") == "1":
+        res = vision_llm.vision_compare(b"\x89PNG", b"\x89PNG", "自检", cfg)
+        return {"ok": res.get("available"), "stage": "mock",
+                "verdict": res.get("verdict"), "reason": res.get("reason")}
+    key = cfg.get("api_key") or os.environ.get("VISION_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    if not key:
+        return {"ok": False, "stage": "no_key",
+                "message": "未检测到 API Key（请设置环境变量 VISION_API_KEY / OPENAI_API_KEY）"}
+    # 用一张 32x32 红图自测连通性（不传业务图，省额度）
+    import io as _io
+    from PIL import Image as _Image
+    buf = _io.BytesIO()
+    _Image.new("RGB", (32, 32), "red").save(buf, format="PNG")
+    res = vision_llm.vision_compare(buf.getvalue(), buf.getvalue(), "自检", cfg)
+    if res.get("available"):
+        return {"ok": True, "stage": "reachable",
+                "verdict": res.get("verdict"), "reason": res.get("reason")}
+    return {"ok": False, "stage": "call_failed", "message": res.get("reason")}
 
 
 
@@ -579,6 +612,16 @@ def _host_of(url):
         return (urlparse(url or "").netloc or str(url)).replace("www.", "")
     except Exception:
         return str(url)
+
+
+def _vision_cfg():
+    """汇总视觉模型配置。API Key 仅从环境变量取（VISION_API_KEY / OPENAI_API_KEY）。"""
+    return {
+        "enabled": db.get_setting("vision_enabled", "0") == "1",
+        "base_url": db.get_setting("vision_base_url", "https://api.openai.com/v1"),
+        "model": db.get_setting("vision_model", "gpt-4o"),
+        "api_key": (os.environ.get("VISION_API_KEY") or os.environ.get("OPENAI_API_KEY")),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -869,11 +912,46 @@ def _run_inspection_core(iid, request=None):
         cmp_detail = {"skipped": True} if (only and only != "detail") else \
             compare.compare_detail(off_det, ag_det)
 
-        violation = (
+        pixel_violation = (
             (isinstance(cmp_main, dict) and cmp_main.get("has_diff") and not cmp_main.get("skipped")) or
             (isinstance(cmp_sku, dict) and cmp_sku.get("mismatch") and not cmp_sku.get("skipped")) or
             (isinstance(cmp_detail, dict) and cmp_detail.get("mismatch") and not cmp_detail.get("skipped"))
         )
+
+        # ---- AI 视觉语义裁决（多模态大模型）----
+        # 仅当本次抓取真实有效（非演示图 / 未被登录墙拦截）时才调用模型，
+        # 避免用兜底图或登录页去消耗 API（既无意义又浪费额度）。
+        vis = {"main": None, "sku": None, "detail": None}
+        vc = _vision_cfg()
+        if vc["enabled"] and not (off.get("simulated") or ag.get("simulated")) \
+                and not (off.get("login_wall") or ag.get("login_wall")):
+            try:
+                if off_main and ag_main:
+                    vis["main"] = vision_llm.vision_compare(off_main[0], ag_main[0], "主图对比", vc)
+                if off_sku and ag_sku:
+                    vis["sku"] = vision_llm.vision_compare(off_sku[0], ag_sku[0], "SKU 规格图对比", vc)
+                if off_det and ag_det:
+                    vis["detail"] = vision_llm.vision_compare(off_det[0], ag_det[0], "详情页图对比", vc)
+            except Exception:
+                pass  # 视觉层异常不影响像素比对结果
+        if vis["main"]:
+            cmp_main["vision"] = vis["main"]
+        if vis["sku"]:
+            cmp_sku["vision"] = vis["sku"]
+        if vis["detail"]:
+            cmp_detail["vision"] = vis["detail"]
+        # 任一视觉模型可用即以其语义裁决为主，纠正像素误报；全 uncertain 时回退像素判定
+        vision_violation = any(
+            isinstance(v, dict) and v.get("available") and v.get("verdict") == "violation"
+            for v in vis.values())
+        vision_uncertain = any(
+            isinstance(v, dict) and v.get("available") and v.get("verdict") == "uncertain"
+            for v in vis.values())
+        vision_used = any(isinstance(v, dict) and v.get("available") for v in vis.values())
+        if vision_used:
+            violation = bool(vision_violation) or (bool(vision_uncertain) and bool(pixel_violation))
+        else:
+            violation = bool(pixel_violation)
         status = "pending" if violation else "modified"
         simulated = off.get("simulated") or ag.get("simulated")
         login_wall = off.get("login_wall") or ag.get("login_wall")
@@ -894,6 +972,15 @@ def _run_inspection_core(iid, request=None):
             note = "以下链接未能真实抓取、已用演示图兜底：" + "、".join(bad) + "（请检查链接可达性 / 本机外网）"
         else:
             note = None
+
+        # AI 视觉语义裁决说明（仅当模型真实参与时追加）
+        if vision_used:
+            _vp = []
+            for _k, _v in (("主图", vis["main"]), ("SKU", vis["sku"]), ("详情", vis["detail"])):
+                if isinstance(_v, dict) and _v.get("available"):
+                    _vp.append(f"{_k}：{_v.get('verdict')}（{_v.get('reason','')}）")
+            if _vp:
+                note = ("AI 视觉语义裁决 —— " + "；".join(_vp))
         # 若看门狗已超时将此巡检置为 error，则不覆盖其最终状态
         if CRAWLER_CANCEL.get(iid):
             return
