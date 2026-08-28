@@ -40,3 +40,4 @@ app/uploads/*
 Thumbs.db
 *.tmp
 *.bak
+server.log
