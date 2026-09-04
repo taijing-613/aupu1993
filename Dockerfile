@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
     libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
     libgbm1 libasound2 libpango-1.0-0 libcairo2 fonts-liberation \
+    socat \
     && rm -rf /var/lib/apt/lists/*
 
 # 依赖文件在 app/ 下，先单独复制以利用 Docker 缓存层
@@ -29,4 +30,12 @@ ENV HOST=0.0.0.0 PORT=8000 DATA_DIR=/app/data
 EXPOSE 8000
 
 # 生产用 gunicorn + uvicorn worker，比单进程 uvicorn 更稳、可扛并发
-CMD ["sh", "-c", "mkdir -p ${DATA_DIR:-.} && exec gunicorn app:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT} --workers 1"]
+#
+# 端口兼容说明（解决 Railway 502 "Application failed to respond"）：
+# 云平台会注入 PORT 环境变量，但对外域名转发的目标端口可能是 8000（来自 EXPOSE），
+# 两者不一致就会出现「服务显示在线、访问却是 502」。
+# 这里做双重兜底：
+#   1. 应用固定监听 8000；
+#   2. 若平台注入的 PORT 不是 8000，额外起一个 socat 把该端口转发到 8000。
+# 这样无论外部访问的是 $PORT 还是 8000，都能正常响应。
+CMD ["sh", "-c", "mkdir -p ${DATA_DIR:-/app/data}; P=${PORT:-8000}; if [ \"$P\" != \"8000\" ]; then echo \"[boot] socat: $P -> 8000\"; socat TCP-LISTEN:$P,fork,reuseaddr TCP:127.0.0.1:8000 & fi; exec gunicorn app:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --workers 1"]
